@@ -1,0 +1,9 @@
+ALTER TABLE short_urls
+    ADD COLUMN user_id BIGINT;
+
+ALTER TABLE short_urls
+    ADD CONSTRAINT fk_short_urls_user
+        FOREIGN KEY (user_id) REFERENCES app_users(id);
+
+CREATE INDEX idx_short_urls_user_id
+    ON short_urls(user_id);

@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: shortener-postgres
+    environment:
+      POSTGRES_DB: shortener
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortener -d shortener"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: shortener-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: shortener-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shortener
+      SPRING_DATASOURCE_USERNAME: shortener
+      SPRING_DATASOURCE_PASSWORD: shortener
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET_BASE64: ${JWT_SECRET_BASE64:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
